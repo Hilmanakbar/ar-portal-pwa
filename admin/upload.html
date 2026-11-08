@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Model — AR Portal Admin</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <!-- model-viewer for in-browser 3D preview -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+  <style>
+    .upload-wrapper {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    @media (min-width: 900px) {
+      .upload-wrapper {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+      }
+    }
+    .preview-panel {
+      position: relative;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #0a0a14;
+      aspect-ratio: 4/3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .preview-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-dim);
+      font-size: 0.875rem;
+    }
+    .preview-placeholder-icon { font-size: 3rem; }
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+      background: #0a0a14;
+    }
+    .progress-bar-wrap {
+      background: var(--bg-elevated);
+      border-radius: var(--radius-full);
+      height: 8px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      border-radius: var(--radius-full);
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+    .progress-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+    .upload-success {
+      display: none;
+      background: rgba(16,185,129,0.1);
+      border: 1px solid rgba(16,185,129,0.3);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      text-align: center;
+    }
+    .upload-success h3 { color: #34d399; margin-bottom: 8px; }
+    .upload-error {
+      display: none;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-size: 0.875rem;
+      color: #f87171;
+      margin-top: 12px;
+    }
+    .gh-warn-banner {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 14px 16px;
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      color: #fbbf24;
+      margin-bottom: 24px;
+    }
+    .format-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .file-info-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="index.html" class="nav-brand">
+      <span class="nav-brand-icon">📤</span>
+      Upload Model 3D
+    </a>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">← Admin</a>
+    </div>
+  </nav>
+
+  <div class="page-container">
+    <div class="page-content">
+
+      <div class="page-header">
+        <h1 class="page-title">📤 Upload Model 3D</h1>
+        <p class="page-subtitle">Upload file 3D ke repositori GitHub. Netlify akan otomatis redeploy dalam ~30 detik.</p>
+      </div>
+
+      <!-- GitHub Config Warning -->
+      <div class="gh-warn-banner" id="gh-warn" style="display:none;">
+        <span>⚠️</span>
+        <span>GitHub belum dikonfigurasi. Model tidak akan tersimpan ke repo.&nbsp;
+          <a href="settings.html" style="color:#fbbf24;text-decoration:underline;">Konfigurasi GitHub →</a>
+        </span>
+      </div>
+
+      <div class="upload-wrapper">
+
+        <!-- Left: Preview -->
+        <div>
+          <div class="preview-panel" id="preview-panel">
+            <div class="preview-placeholder" id="preview-placeholder">
+              <span class="preview-placeholder-icon">🗂️</span>
+              <span>Preview model akan muncul di sini</span>
+            </div>
+            <model-viewer
+              id="model-preview"
+              camera-controls
+              auto-rotate
+              shadow-intensity="1"
+              environment-image="neutral"
+              style="display:none;"
+            ></model-viewer>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:8px;text-align:center;">
+            🖱️ Drag untuk putar · Scroll untuk zoom
+          </p>
+        </div>
+
+        <!-- Right: Form -->
+        <div>
+          <!-- Drop zone -->
+          <div class="file-drop-zone" id="drop-zone">
+            <input type="file" id="file-input" accept=".gltf,.glb,.obj,.stl,.dae" />
+            <span class="drop-icon">📁</span>
+            <span class="drop-title">Klik atau drag & drop file di sini</span>
+            <span class="drop-hint">Format yang didukung:</span>
+            <div class="format-badges">
+              <span class="badge badge-success">GLB</span>
+              <span class="badge badge-success">GLTF</span>
+              <span class="badge badge-info">OBJ</span>
+              <span class="badge badge-warning">STL</span>
+              <span class="badge badge-primary">DAE</span>
+            </div>
+          </div>
+
+          <!-- File selected info -->
+          <div id="file-selected" style="display:none;">
+            <div class="file-info-row">
+              <span class="file-selected-icon" id="file-icon">🗂️</span>
+              <div class="file-selected-info">
+                <div class="file-selected-name" id="file-name">file.glb</div>
+                <div class="file-selected-size" id="file-size">0 KB</div>
+              </div>
+              <span id="file-format-badge"></span>
+              <button class="btn btn-secondary btn-sm" onclick="clearFile()">✕ Ganti</button>
+            </div>
+          </div>
+
+          <!-- Form fields -->
+          <div id="upload-form" style="display:none; margin-top:20px;">
+            <div class="card">
+              <div class="card-body">
+                <div class="form-group">
+                  <label for="model-name">Nama Model *</label>
+                  <input type="text" id="model-name" placeholder="Contoh: Museum Artifact 01" />
+                </div>
+                <div class="form-group">
+                  <label for="model-desc">Deskripsi</label>
+                  <textarea id="model-desc" placeholder="Deskripsikan model ini..." rows="3"></textarea>
+                </div>
+
+                <!-- Progress -->
+                <div id="upload-progress" style="display:none;">
+                  <div class="progress-label" id="progress-label">Mengupload ke GitHub...</div>
+                  <div class="progress-bar-wrap">
+                    <div class="progress-bar" id="progress-bar"></div>
+                  </div>
+                </div>
+
+                <!-- Error -->
+                <div class="upload-error" id="upload-error"></div>
+
+                <button class="btn btn-primary btn-full" id="upload-btn" style="margin-top:16px;">
+                  📤 Upload ke GitHub
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Success -->
+          <div class="upload-success" id="upload-success">
+            <div style="font-size:2.5rem;margin-bottom:8px;">🎉</div>
+            <h3>Model Berhasil Diupload!</h3>
+            <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:16px;">
+              File tersimpan di GitHub. Netlify akan auto-deploy dalam ~30 detik.
+              Semua pengguna akan dapat melihat model ini setelah deploy selesai.
+            </p>
+            <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+              <button class="btn btn-primary" onclick="resetUpload()">📤 Upload Model Lain</button>
+              <a href="portals.html" class="btn btn-secondary">🌐 Kelola Portal</a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script src="../js/github-storage.js"></script>
+  <script>
+    // Auth check
+    if (!AppUtils.isAdminAuthenticated()) {
+      window.location.href = 'index.html';
+    }
+
+    // GitHub config check
+    if (!GitHubStorage.isConfigured()) {
+      document.getElementById('gh-warn').style.display = 'flex';
+    }
+
+    let selectedFile = null;
+    let previewBlobUrl = null;
+
+    const dropZone      = document.getElementById('drop-zone');
+    const fileInput     = document.getElementById('file-input');
+    const fileSelected  = document.getElementById('file-selected');
+    const uploadForm    = document.getElementById('upload-form');
+    const modelPreview  = document.getElementById('model-preview');
+    const previewPlaceholder = document.getElementById('preview-placeholder');
+
+    // Drop zone events
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('drag-over');
+    });
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const f = e.dataTransfer.files[0];
+      if (f) handleFile(f);
+    });
+    fileInput.addEventListener('change', e => {
+      const f = e.target.files[0];
+      if (f) handleFile(f);
+    });
+
+    function handleFile(file) {
+      const ext = AppUtils.getFileExtension(file.name);
+      const supported = ['gltf', 'glb', 'obj', 'stl', 'dae'];
+      if (!supported.includes(ext)) {
+        AppUtils.showToast(`Format .${ext} tidak didukung. Gunakan: ${supported.join(', ')}`, 'error');
+        return;
+      }
+      selectedFile = file;
+
+      // Show file info
+      document.getElementById('file-name').textContent = file.name;
+      document.getElementById('file-size').textContent = AppUtils.formatFileSize(file.size);
+      document.getElementById('file-format-badge').innerHTML = AppUtils.getFormatBadge(ext);
+      document.getElementById('file-icon').textContent = ext === 'glb' || ext === 'gltf' ? '🗂️' : '📐';
+      fileSelected.style.display = '';
+      dropZone.style.display = 'none';
+
+      // Auto-fill name
+      const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ');
+      document.getElementById('model-name').value = baseName;
+      uploadForm.style.display = '';
+
+      // Preview with model-viewer (GLB/GLTF only for preview)
+      if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+      if (ext === 'glb' || ext === 'gltf') {
+        previewBlobUrl = URL.createObjectURL(file);
+        modelPreview.setAttribute('src', previewBlobUrl);
+        modelPreview.style.display = '';
+        previewPlaceholder.style.display = 'none';
+      } else {
+        // For OBJ/STL/DAE, show placeholder
+        modelPreview.style.display = 'none';
+        previewPlaceholder.style.display = '';
+        previewPlaceholder.innerHTML = `
+          <span class="preview-placeholder-icon">${AppUtils.getFormatBadge(ext)}</span>
+          <span style="margin-top:8px;">Preview tidak tersedia untuk format .${ext.toUpperCase()}</span>
+          <span style="font-size:0.78rem;color:var(--text-dim);">File akan diupload ke GitHub dengan benar</span>`;
+      }
+
+      // Reset result UI
+      document.getElementById('upload-success').style.display = 'none';
+      document.getElementById('upload-error').style.display = 'none';
+      document.getElementById('upload-progress').style.display = 'none';
+      document.getElementById('upload-btn').disabled = false;
+      document.getElementById('upload-btn').textContent = '📤 Upload ke GitHub';
+    }
+
+    function clearFile() {
+      selectedFile = null;
+      if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); previewBlobUrl = null; }
+      modelPreview.setAttribute('src', '');
+      modelPreview.style.display = 'none';
+      previewPlaceholder.style.display = '';
+      previewPlaceholder.innerHTML = `<span class="preview-placeholder-icon">🗂️</span><span>Preview model akan muncul di sini</span>`;
+      fileSelected.style.display = 'none';
+      uploadForm.style.display = 'none';
+      dropZone.style.display = '';
+      fileInput.value = '';
+    }
+
+    function resetUpload() {
+      clearFile();
+      document.getElementById('upload-success').style.display = 'none';
+      document.getElementById('model-name').value = '';
+      document.getElementById('model-desc').value = '';
+    }
+
+    // Fake progress animation (GitHub API doesn't expose progress)
+    function animateProgress(label) {
+      const bar = document.getElementById('progress-bar');
+      const lbl = document.getElementById('progress-label');
+      lbl.textContent = label;
+      document.getElementById('upload-progress').style.display = '';
+      let w = 0;
+      const interval = setInterval(() => {
+        // Advance quickly to 85%, then slow down
+        const step = w < 85 ? (Math.random() * 6 + 2) : (Math.random() * 1.5);
+        w = Math.min(w + step, 92);
+        bar.style.width = w + '%';
+      }, 400);
+      return {
+        finish(msg) {
+          clearInterval(interval);
+          bar.style.width = '100%';
+          lbl.textContent = msg || 'Selesai!';
+        },
+        stop() { clearInterval(interval); }
+      };
+    }
+
+    // Upload
+    document.getElementById('upload-btn').addEventListener('click', async () => {
+      if (!selectedFile) { AppUtils.showToast('Pilih file terlebih dahulu.', 'error'); return; }
+
+      const name = document.getElementById('model-name').value.trim();
+      const desc = document.getElementById('model-desc').value.trim();
+
+      if (!name) {
+        AppUtils.showToast('Nama model tidak boleh kosong.', 'error');
+        document.getElementById('model-name').focus();
+        return;
+      }
+
+      if (!GitHubStorage.isConfigured()) {
+        AppUtils.showToast('GitHub belum dikonfigurasi. Silakan atur di Settings.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('upload-btn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Mengupload...';
+      document.getElementById('upload-error').style.display = 'none';
+
+      const prog = animateProgress('Mengupload model ke GitHub...');
+
+      try {
+        prog.finish('Menyimpan metadata...');
+        document.getElementById('progress-label').textContent = 'Mengupload model ke GitHub...';
+        const result = await GitHubStorage.uploadModel(selectedFile, { name, description: desc });
+        prog.finish('✅ Upload berhasil!');
+
+        document.getElementById('upload-progress').style.display = 'none';
+        document.getElementById('upload-form').style.display = 'none';
+        document.getElementById('upload-success').style.display = '';
+        AppUtils.showToast('Model berhasil diupload ke GitHub!', 'success', 5000);
+      } catch (err) {
+        prog.stop();
+        document.getElementById('upload-progress').style.display = 'none';
+        const errBox = document.getElementById('upload-error');
+        errBox.style.display = '';
+        errBox.innerHTML = `
+          <strong>❌ Upload gagal:</strong> ${err.message}<br>
+          <small style="color:var(--text-dim);margin-top:6px;display:block;">
+            Tips: Pastikan token GitHub memiliki izin <strong>Contents: Read & Write</strong>, 
+            folder <code>models/</code> sudah ada di repo, dan koneksi internet stabil.
+          </small>`;
+        btn.disabled = false;
+        btn.textContent = '📤 Upload ke GitHub';
+      }
+    });
+  </script>
+</body>
+</html>

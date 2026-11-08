@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel — AR Portal</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <style>
+    /* ---- Login Screen ---- */
+    .login-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+    .login-logo { font-size: 3.5rem; margin-bottom: 16px; }
+    .login-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+    .login-subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 28px; }
+    .login-error {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      color: #f87171;
+      font-size: 0.85rem;
+      margin-top: 12px;
+      display: none;
+    }
+    /* ---- GitHub Banner ---- */
+    .gh-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      margin-bottom: 24px;
+    }
+    .gh-banner-ok {
+      background: rgba(16,185,129,0.1);
+      border: 1px solid rgba(16,185,129,0.3);
+      color: #34d399;
+    }
+    .gh-banner-warn {
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.3);
+      color: #fbbf24;
+    }
+    /* ---- Quick Action Grid ---- */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 480px) {
+      .quick-actions { grid-template-columns: 1fr; }
+    }
+    .qa-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 20px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition), transform var(--transition-slow);
+      text-decoration: none;
+      color: var(--text);
+    }
+    .qa-card:hover {
+      border-color: var(--primary);
+      background: var(--bg-elevated);
+      transform: translateY(-3px);
+    }
+    .qa-icon { font-size: 2rem; }
+    .qa-label { font-size: 0.875rem; font-weight: 600; }
+    /* ---- Stat cards ---- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    /* ---- Lists ---- */
+    .model-list, .portal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .list-loading {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div class="login-screen" id="login-screen">
+    <div class="login-card">
+      <div class="login-logo">🚪</div>
+      <h1 class="login-title">Admin Panel</h1>
+      <p class="login-subtitle">Masukkan password untuk melanjutkan</p>
+      <div class="form-group" style="text-align:left;">
+        <label for="admin-password">Password</label>
+        <input type="password" id="admin-password" placeholder="••••••••" autofocus />
+      </div>
+      <button class="btn btn-primary btn-full" id="login-btn">🔓 Masuk</button>
+      <div class="login-error" id="login-error">Password salah. Coba lagi.</div>
+    </div>
+  </div>
+
+  <!-- ADMIN DASHBOARD (hidden until authenticated) -->
+  <div id="admin-dashboard" style="display:none;">
+
+    <!-- Navbar -->
+    <nav class="navbar">
+      <a href="#" class="nav-brand">
+        <span class="nav-brand-icon">👨‍💼</span>
+        Admin Panel
+      </a>
+      <div class="nav-links">
+        <a href="settings.html" class="nav-link">⚙️ Settings</a>
+        <button class="btn btn-secondary btn-sm" id="logout-btn">🚪 Keluar</button>
+      </div>
+    </nav>
+
+    <div class="page-container">
+      <div class="page-content">
+
+        <!-- Page Header -->
+        <div class="page-header">
+          <h1 class="page-title">👨‍💼 Dashboard Admin</h1>
+          <p class="page-subtitle">Kelola model 3D dan portal AR dari sini.</p>
+        </div>
+
+        <!-- GitHub Status Banner -->
+        <div id="gh-banner" class="gh-banner gh-banner-warn">
+          <span>⚠️</span>
+          <span>GitHub belum dikonfigurasi — <a href="settings.html" style="color:#fbbf24;text-decoration:underline;">Konfigurasi Sekarang →</a></span>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-icon">🗂️</span>
+            <span class="stat-value" id="stat-models">—</span>
+            <span class="stat-label">Total Models</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">🌐</span>
+            <span class="stat-value" id="stat-portals">—</span>
+            <span class="stat-label">Total Portals</span>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section-header">
+          <h2 class="section-title">⚡ Aksi Cepat</h2>
+        </div>
+        <div class="quick-actions">
+          <a href="upload.html" class="qa-card">
+            <span class="qa-icon">📤</span>
+            <span class="qa-label">Upload Model</span>
+          </a>
+          <a href="portals.html" class="qa-card">
+            <span class="qa-icon">🌐</span>
+            <span class="qa-label">Kelola Portal</span>
+          </a>
+          <a href="settings.html" class="qa-card">
+            <span class="qa-icon">⚙️</span>
+            <span class="qa-label">Pengaturan</span>
+          </a>
+        </div>
+
+        <!-- Recent Models -->
+        <div class="section-header">
+          <h2 class="section-title">🗂️ Model Terbaru</h2>
+          <a href="upload.html" class="btn btn-primary btn-sm">+ Upload</a>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div id="recent-models" class="model-list">
+              <div class="list-loading">⏳ Memuat model...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Portals -->
+        <div class="section-header" style="margin-top:32px;">
+          <h2 class="section-title">🌐 Portal</h2>
+          <a href="portals.html" class="btn btn-primary btn-sm">+ Buat Portal</a>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div id="recent-portals" class="portal-list">
+              <div class="list-loading">⏳ Memuat portal...</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /admin-dashboard -->
+
+  <script src="../js/app.js"></script>
+  <script src="../js/github-storage.js"></script>
+  <script>
+    const ADMIN_PASSWORD = 'admin123';
+
+    // ---- Auth logic ----
+    function checkAuth() {
+      if (AppUtils.isAdminAuthenticated()) {
+        showDashboard();
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-dashboard').style.display = '';
+      initDashboard();
+    }
+
+    // Login
+    document.getElementById('login-btn').addEventListener('click', attemptLogin);
+    document.getElementById('admin-password').addEventListener('keydown', e => {
+      if (e.key === 'Enter') attemptLogin();
+    });
+
+    function attemptLogin() {
+      const pw = document.getElementById('admin-password').value;
+      if (pw === ADMIN_PASSWORD) {
+        localStorage.setItem('admin_auth', 'true');
+        showDashboard();
+      } else {
+        document.getElementById('login-error').style.display = '';
+        document.getElementById('admin-password').classList.add('input-error');
+      }
+    }
+
+    // Logout
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      AppUtils.adminLogout();
+    });
+
+    // ---- Dashboard init ----
+    async function initDashboard() {
+      // GitHub banner
+      updateGhBanner();
+      // Load data
+      await loadDashboardData();
+    }
+
+    function updateGhBanner() {
+      const banner = document.getElementById('gh-banner');
+      if (GitHubStorage.isConfigured()) {
+        const cfg = GitHubStorage.config;
+        banner.className = 'gh-banner gh-banner-ok';
+        banner.innerHTML = `<span>✅</span><span>Terhubung ke <strong>${cfg.owner}/${cfg.repo}</strong> (branch: ${cfg.branch || 'main'})</span>`;
+      } else {
+        banner.className = 'gh-banner gh-banner-warn';
+        banner.innerHTML = `<span>⚠️</span><span>GitHub belum dikonfigurasi — <a href="settings.html" style="color:#fbbf24;text-decoration:underline;">Konfigurasi Sekarang →</a></span>`;
+      }
+    }
+
+    async function loadDashboardData() {
+      try {
+        const [models, portals] = await Promise.all([
+          GitHubStorage.getAllModels(),
+          GitHubStorage.getAllPortals()
+        ]);
+
+        // Stats
+        document.getElementById('stat-models').textContent  = models.length;
+        document.getElementById('stat-portals').textContent = portals.length;
+
+        // Recent Models (last 5)
+        const recentModelsEl = document.getElementById('recent-models');
+        const recentModels = models.slice(-5).reverse();
+        if (recentModels.length === 0) {
+          recentModelsEl.innerHTML = `
+            <div class="empty-state" style="padding:32px 20px;">
+              <div class="empty-icon">🗂️</div>
+              <div class="empty-title">Belum ada model</div>
+              <div class="empty-description">Upload model 3D pertama Anda.</div>
+              <a href="upload.html" class="btn btn-primary btn-sm" style="margin-top:8px;">📤 Upload Model</a>
+            </div>`;
+        } else {
+          recentModelsEl.innerHTML = recentModels.map(m => `
+            <div class="item-row">
+              <span class="item-icon">🗂️</span>
+              <div class="item-info">
+                <div class="item-name">${m.name}</div>
+                <div class="item-meta">${AppUtils.getFormatBadge(m.format)} &nbsp;${AppUtils.formatDate(m.createdAt)}</div>
+              </div>
+              <div class="item-actions">
+                <button class="btn btn-danger btn-sm" onclick="deleteModel('${m.id}', '${m.name.replace(/'/g, "\\'")}')">🗑️</button>
+              </div>
+            </div>`).join('');
+        }
+
+        // Portals
+        const portalsEl = document.getElementById('recent-portals');
+        if (portals.length === 0) {
+          portalsEl.innerHTML = `
+            <div class="empty-state" style="padding:32px 20px;">
+              <div class="empty-icon">🌐</div>
+              <div class="empty-title">Belum ada portal</div>
+              <div class="empty-description">Buat portal pertama untuk menampung model Anda.</div>
+              <a href="portals.html" class="btn btn-primary btn-sm" style="margin-top:8px;">🌐 Buat Portal</a>
+            </div>`;
+        } else {
+          portalsEl.innerHTML = portals.map(p => `
+            <div class="item-row">
+              <span class="item-icon">🌐</span>
+              <div class="item-info">
+                <div class="item-name">${p.name}</div>
+                <div class="item-meta">${(p.modelIds || []).length} model &nbsp;·&nbsp; ${AppUtils.formatDate(p.createdAt)}</div>
+              </div>
+              <div class="item-actions">
+                <a href="portals.html" class="btn btn-secondary btn-sm">✏️</a>
+                <button class="btn btn-danger btn-sm" onclick="deletePortal('${p.id}', '${p.name.replace(/'/g, "\\'")}')">🗑️</button>
+              </div>
+            </div>`).join('');
+        }
+
+      } catch (err) {
+        document.getElementById('recent-models').innerHTML  = `<p style="color:var(--danger);padding:16px;">Gagal memuat data: ${err.message}</p>`;
+        document.getElementById('recent-portals').innerHTML = '';
+      }
+    }
+
+    async function deleteModel(id, name) {
+      const ok = await AppUtils.confirm(`Hapus model "${name}"? Ini akan menghapus dari daftar model di portals.json.`);
+      if (!ok) return;
+      if (!GitHubStorage.isConfigured()) {
+        AppUtils.showToast('GitHub belum dikonfigurasi.', 'error'); return;
+      }
+      AppUtils.showLoading(true, 'Menghapus model...');
+      try {
+        await GitHubStorage.deleteModel(id);
+        AppUtils.showToast('Model berhasil dihapus.', 'success');
+        await loadDashboardData();
+      } catch (err) {
+        AppUtils.showToast('Gagal: ' + err.message, 'error');
+      } finally {
+        AppUtils.showLoading(false);
+      }
+    }
+
+    async function deletePortal(id, name) {
+      const ok = await AppUtils.confirm(`Hapus portal "${name}"?`);
+      if (!ok) return;
+      if (!GitHubStorage.isConfigured()) {
+        AppUtils.showToast('GitHub belum dikonfigurasi.', 'error'); return;
+      }
+      AppUtils.showLoading(true, 'Menghapus portal...');
+      try {
+        await GitHubStorage.deletePortal(id);
+        AppUtils.showToast('Portal berhasil dihapus.', 'success');
+        await loadDashboardData();
+      } catch (err) {
+        AppUtils.showToast('Gagal: ' + err.message, 'error');
+      } finally {
+        AppUtils.showLoading(false);
+      }
+    }
+
+    // Init
+    checkAuth();
+  </script>
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Settings — AR Portal Admin</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <style>
+    .settings-section {
+      margin-bottom: 32px;
+    }
+    .token-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .token-wrap input {
+      padding-right: 48px;
+    }
+    .token-toggle {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px;
+      transition: color var(--transition);
+    }
+    .token-toggle:hover { color: var(--text); }
+    .config-display {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .config-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .config-key {
+      color: var(--primary-light);
+      min-width: 80px;
+    }
+    .config-val { color: var(--text); }
+    .step-list {
+      counter-reset: steps;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .step-item {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+    }
+    .step-text { color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; }
+    .step-text strong { color: var(--text); }
+    .info-box {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 14px 16px;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    .info-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .success-box {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 14px 16px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    .error-box {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 14px 16px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    #test-result { display: none; margin-top: 12px; }
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .netlify-step {
+      display: flex;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      align-items: flex-start;
+    }
+    .netlify-step + .netlify-step { margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="index.html" class="nav-brand">
+      <span class="nav-brand-icon">⚙️</span>
+      GitHub Settings
+    </a>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">← Kembali ke Admin</a>
+    </div>
+  </nav>
+
+  <div class="page-container">
+    <div class="page-content" style="max-width:720px;">
+
+      <!-- Page Header -->
+      <div class="page-header">
+        <h1 class="page-title">🔧 Konfigurasi GitHub</h1>
+        <p class="page-subtitle">Hubungkan admin panel ke repositori GitHub agar model tersimpan secara terpusat dan semua pengguna dapat melihat konten yang sama.</p>
+      </div>
+
+      <!-- GitHub Config Card -->
+      <div class="card settings-section">
+        <div class="card-header">
+          <h2 class="card-title">🔑 Kredensial GitHub</h2>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="gh-owner">GitHub Username / Organization</label>
+            <input type="text" id="gh-owner" placeholder="contoh: johndoe" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="gh-repo">Nama Repositori</label>
+            <input type="text" id="gh-repo" placeholder="contoh: ar-portal-pwa" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="gh-branch">Branch</label>
+            <input type="text" id="gh-branch" placeholder="main" value="main" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="gh-token">Personal Access Token</label>
+            <div class="token-wrap">
+              <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxx" autocomplete="off" />
+              <button class="token-toggle" id="token-toggle" title="Tampilkan/Sembunyikan token">👁️</button>
+            </div>
+            <span class="form-error" style="color:var(--text-muted);margin-top:4px;">
+              Buat token di: <strong>github.com → Settings → Developer settings → Personal access tokens → Fine-grained → Permissions: Contents (Read &amp; Write)</strong>
+            </span>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-primary" id="save-config-btn">💾 Simpan Konfigurasi</button>
+            <button class="btn btn-secondary" id="test-conn-btn">🔌 Test Koneksi</button>
+          </div>
+
+          <div id="test-result"></div>
+        </div>
+      </div>
+
+      <!-- Current Config Display -->
+      <div class="card settings-section" id="current-config-card" style="display:none;">
+        <div class="card-header">
+          <h2 class="card-title">📋 Konfigurasi Saat Ini</h2>
+        </div>
+        <div class="card-body">
+          <div class="config-display" id="config-display"></div>
+        </div>
+      </div>
+
+      <!-- Privacy Warning -->
+      <div class="info-box settings-section">
+        <span class="info-icon">🔒</span>
+        <div>
+          <strong style="color:var(--warning);display:block;margin-bottom:4px;">Keamanan Token</strong>
+          Personal Access Token hanya tersimpan di browser ini (localStorage). Tidak dikirim ke server manapun selain GitHub API secara langsung. Jangan bagikan token kepada siapapun.
+        </div>
+      </div>
+
+      <!-- Netlify Integration -->
+      <div class="card settings-section">
+        <div class="card-header">
+          <h2 class="card-title">🚀 Integrasi Netlify</h2>
+        </div>
+        <div class="card-body">
+          <p style="margin-bottom:16px;color:var(--text-muted);font-size:0.9rem;">
+            Hubungkan repo GitHub ke Netlify agar setiap push otomatis men-trigger redeploy. Semua pengguna akan melihat model terbaru dalam ~30 detik.
+          </p>
+          <div class="step-list">
+            <div class="netlify-step">
+              <span style="font-size:1.2rem;">1️⃣</span>
+              <div class="step-text">Buka <strong><a href="https://netlify.com" target="_blank">netlify.com</a></strong> dan login atau daftar akun gratis.</div>
+            </div>
+            <div class="netlify-step">
+              <span style="font-size:1.2rem;">2️⃣</span>
+              <div class="step-text">Klik <strong>"Add new site" → "Import an existing project"</strong>.</div>
+            </div>
+            <div class="netlify-step">
+              <span style="font-size:1.2rem;">3️⃣</span>
+              <div class="step-text">Pilih <strong>"Deploy with GitHub"</strong> dan pilih repositori AR Portal Anda.</div>
+            </div>
+            <div class="netlify-step">
+              <span style="font-size:1.2rem;">4️⃣</span>
+              <div class="step-text">Biarkan pengaturan default, klik <strong>"Deploy site"</strong>. Netlify akan memberikan URL unik seperti <code>https://your-site.netlify.app</code>.</div>
+            </div>
+            <div class="netlify-step">
+              <span style="font-size:1.2rem;">5️⃣</span>
+              <div class="step-text">Setiap kali admin mengupload model (via GitHub API), Netlify auto-redeploy dalam ~30 detik. Bagikan URL Netlify kepada pengguna.</div>
+            </div>
+          </div>
+          <div style="margin-top:16px;">
+            <a href="https://app.netlify.com/start" target="_blank" class="btn btn-success">
+              🌐 Buka Netlify Dashboard
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- How GitHub Token Works -->
+      <div class="card settings-section">
+        <div class="card-header">
+          <h2 class="card-title">📖 Cara Membuat Personal Access Token</h2>
+        </div>
+        <div class="card-body">
+          <div class="step-list">
+            <div class="step-item">
+              <div class="step-num">1</div>
+              <div class="step-text">Login ke <strong>github.com</strong> dan klik foto profil → <strong>Settings</strong></div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">2</div>
+              <div class="step-text">Scroll ke bawah, klik <strong>Developer settings</strong> (di sidebar kiri bawah)</div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">3</div>
+              <div class="step-text">Klik <strong>Personal access tokens → Fine-grained tokens → Generate new token</strong></div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">4</div>
+              <div class="step-text">Isi nama token (misal: "AR Portal Admin"), pilih expiration, pilih <strong>Repository access → Only select repositories</strong> → pilih repo AR Portal</div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">5</div>
+              <div class="step-text">Di <strong>Permissions → Repository permissions → Contents</strong>, pilih <strong>Read and write</strong></div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">6</div>
+              <div class="step-text">Klik <strong>Generate token</strong>, copy token dan paste di form di atas. Token hanya tampil sekali!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script src="../js/github-storage.js"></script>
+  <script>
+    // Auth check
+    if (!AppUtils.isAdminAuthenticated()) {
+      window.location.href = 'index.html';
+    }
+
+    // Token toggle
+    const tokenInput = document.getElementById('gh-token');
+    document.getElementById('token-toggle').addEventListener('click', () => {
+      tokenInput.type = tokenInput.type === 'password' ? 'text' : 'password';
+    });
+
+    // Load existing config into form
+    function populateForm() {
+      const cfg = GitHubStorage.config;
+      if (!cfg) return;
+      document.getElementById('gh-owner').value  = cfg.owner  || '';
+      document.getElementById('gh-repo').value   = cfg.repo   || '';
+      document.getElementById('gh-branch').value = cfg.branch || 'main';
+      document.getElementById('gh-token').value  = cfg.token  || '';
+      showCurrentConfig(cfg);
+    }
+
+    function showCurrentConfig(cfg) {
+      if (!cfg || !cfg.owner) {
+        document.getElementById('current-config-card').style.display = 'none';
+        return;
+      }
+      document.getElementById('current-config-card').style.display = '';
+      document.getElementById('config-display').innerHTML = `
+        <div class="config-row"><span class="config-key">Owner:</span><span class="config-val">${cfg.owner}</span></div>
+        <div class="config-row"><span class="config-key">Repo:</span><span class="config-val">${cfg.repo}</span></div>
+        <div class="config-row"><span class="config-key">Branch:</span><span class="config-val">${cfg.branch || 'main'}</span></div>
+        <div class="config-row"><span class="config-key">Token:</span><span class="config-val" style="color:var(--secondary);">●●●●●●●●●●●● (tersimpan)</span></div>
+        <div class="config-row"><span class="config-key">Raw URL:</span><span class="config-val" style="font-size:0.78rem;word-break:break-all;">${GitHubStorage.getRawBaseUrl()}</span></div>
+      `;
+    }
+
+    // Save config
+    document.getElementById('save-config-btn').addEventListener('click', () => {
+      const owner  = document.getElementById('gh-owner').value.trim();
+      const repo   = document.getElementById('gh-repo').value.trim();
+      const branch = document.getElementById('gh-branch').value.trim() || 'main';
+      const token  = document.getElementById('gh-token').value.trim();
+
+      if (!owner || !repo || !token) {
+        AppUtils.showToast('Harap isi semua field yang diperlukan.', 'error');
+        return;
+      }
+
+      GitHubStorage.saveConfig({ owner, repo, branch, token });
+      showCurrentConfig({ owner, repo, branch, token });
+      AppUtils.showToast('✅ Konfigurasi berhasil disimpan!', 'success');
+    });
+
+    // Test connection
+    document.getElementById('test-conn-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('test-conn-btn');
+      const result = document.getElementById('test-result');
+      btn.disabled = true;
+      btn.textContent = '⏳ Menguji...';
+      result.style.display = 'none';
+
+      // Save first from form values
+      const owner  = document.getElementById('gh-owner').value.trim();
+      const repo   = document.getElementById('gh-repo').value.trim();
+      const branch = document.getElementById('gh-branch').value.trim() || 'main';
+      const token  = document.getElementById('gh-token').value.trim();
+
+      if (!owner || !repo || !token) {
+        result.style.display = '';
+        result.innerHTML = `<div class="error-box"><span class="info-icon">❌</span><span>Harap isi semua field terlebih dahulu.</span></div>`;
+        btn.disabled = false;
+        btn.textContent = '🔌 Test Koneksi';
+        return;
+      }
+
+      GitHubStorage.saveConfig({ owner, repo, branch, token });
+
+      try {
+        const repoData = await GitHubStorage.testConnection();
+        result.style.display = '';
+        result.innerHTML = `
+          <div class="success-box">
+            <span class="info-icon">✅</span>
+            <div>
+              <strong style="color:var(--secondary);display:block;">Koneksi berhasil!</strong>
+              Terhubung ke repo: <strong>${repoData.full_name}</strong>
+              ${repoData.private ? '🔒 (Private)' : '🌐 (Public)'}
+              — ${repoData.stargazers_count} ⭐
+            </div>
+          </div>`;
+        showCurrentConfig({ owner, repo, branch, token });
+      } catch (err) {
+        result.style.display = '';
+        result.innerHTML = `
+          <div class="error-box">
+            <span class="info-icon">❌</span>
+            <div>
+              <strong style="color:var(--danger);display:block;">Koneksi gagal</strong>
+              ${err.message}<br>
+              <small style="color:var(--text-dim);">Pastikan owner, repo, dan token sudah benar. Token harus memiliki izin Contents (Read &amp; Write).</small>
+            </div>
+          </div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔌 Test Koneksi';
+      }
+    });
+
+    // Init
+    populateForm();
+  </script>
+</body>
+</html>

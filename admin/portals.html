@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kelola Portal — AR Portal Admin</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <style>
+    .gh-warn-banner {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 14px 16px;
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      color: #fbbf24;
+      margin-bottom: 24px;
+    }
+    .portal-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .portal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      transition: border-color var(--transition), transform var(--transition-slow);
+    }
+    .portal-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+    }
+    .portal-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .portal-card-name {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text);
+    }
+    .portal-card-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .portal-card-models {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .model-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .portal-card-footer {
+      display: flex;
+      gap: 8px;
+    }
+    /* Model checkbox list in modal */
+    .model-checkbox-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .model-check-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .model-check-item:hover { border-color: var(--primary); background: var(--bg-elevated); }
+    .model-check-item input[type="checkbox"] {
+      width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary);
+    }
+    .model-check-label {
+      flex: 1;
+      cursor: pointer;
+    }
+    .model-check-name { font-weight: 600; font-size: 0.875rem; color: var(--text); }
+    .model-check-meta { font-size: 0.75rem; color: var(--text-muted); }
+
+    .share-link-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: var(--primary-light);
+      word-break: break-all;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="index.html" class="nav-brand">
+      <span class="nav-brand-icon">🌐</span>
+      Kelola Portal
+    </a>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">← Admin</a>
+    </div>
+  </nav>
+
+  <div class="page-container">
+    <div class="page-content">
+
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="page-title">🌐 Kelola Portal</h1>
+          <p class="page-subtitle">Buat dan kelola portal AR yang berisi koleksi model 3D.</p>
+        </div>
+        <button class="btn btn-primary" id="create-portal-btn">+ Buat Portal Baru</button>
+      </div>
+
+      <!-- GitHub Config Warning -->
+      <div class="gh-warn-banner" id="gh-warn" style="display:none;">
+        <span>⚠️</span>
+        <span>GitHub belum dikonfigurasi. Perubahan tidak akan tersimpan ke repo.&nbsp;
+          <a href="settings.html" style="color:#fbbf24;text-decoration:underline;">Konfigurasi GitHub →</a>
+        </span>
+      </div>
+
+      <!-- Portal list -->
+      <div id="portal-list-wrap">
+        <div class="list-loading" style="text-align:center;padding:40px;color:var(--text-muted);">
+          ⏳ Memuat portal...
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Create / Edit Portal Modal -->
+  <div class="modal-overlay" id="portal-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-title">Buat Portal Baru</h3>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-portal-id" />
+        <div class="form-group">
+          <label for="portal-name">Nama Portal *</label>
+          <input type="text" id="portal-name" placeholder="Contoh: Museum Digital" />
+        </div>
+        <div class="form-group">
+          <label for="portal-desc">Deskripsi</label>
+          <textarea id="portal-desc" rows="2" placeholder="Deskripsi singkat portal ini..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Pilih Model 3D</label>
+          <div class="model-checkbox-list" id="model-checkbox-list">
+            <div style="color:var(--text-muted);font-size:0.875rem;padding:12px;text-align:center;">Memuat model...</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
+        <button class="btn btn-primary" id="save-portal-btn">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script src="../js/github-storage.js"></script>
+  <script>
+    // Auth check
+    if (!AppUtils.isAdminAuthenticated()) window.location.href = 'index.html';
+
+    if (!GitHubStorage.isConfigured()) {
+      document.getElementById('gh-warn').style.display = 'flex';
+    }
+
+    let allModels = [];
+    let allPortals = [];
+    let editingPortalId = null;
+
+    async function loadData() {
+      try {
+        [allModels, allPortals] = await Promise.all([
+          GitHubStorage.getAllModels(),
+          GitHubStorage.getAllPortals()
+        ]);
+        renderPortals();
+      } catch (err) {
+        document.getElementById('portal-list-wrap').innerHTML =
+          `<p style="color:var(--danger);padding:16px;">Gagal memuat data: ${err.message}</p>`;
+      }
+    }
+
+    function renderPortals() {
+      const wrap = document.getElementById('portal-list-wrap');
+      if (allPortals.length === 0) {
+        wrap.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🌐</div>
+            <div class="empty-title">Belum ada portal</div>
+            <div class="empty-description">Klik "Buat Portal Baru" untuk membuat portal AR pertama Anda.</div>
+          </div>`;
+        return;
+      }
+
+      wrap.innerHTML = `<div class="portal-cards">${allPortals.map(p => {
+        const models = (p.modelIds || []).map(id => allModels.find(m => m.id === id)).filter(Boolean);
+        const shareUrl = `${window.location.origin}/user/portal-view.html?id=${p.id}`;
+        return `
+          <div class="portal-card">
+            <div class="portal-card-header">
+              <div>
+                <div class="portal-card-name">🌐 ${p.name}</div>
+                <div style="font-size:0.75rem;color:var(--text-dim);margin-top:2px;">${AppUtils.formatDate(p.createdAt)}</div>
+              </div>
+            </div>
+            ${p.description ? `<div class="portal-card-desc">${p.description}</div>` : ''}
+            <div class="portal-card-models">
+              ${models.length === 0
+                ? '<span style="color:var(--text-dim);font-size:0.78rem;">Tidak ada model</span>'
+                : models.map(m => `<span class="model-chip">🗂️ ${m.name} ${AppUtils.getFormatBadge(m.format)}</span>`).join('')
+              }
+            </div>
+            <div style="margin-bottom:10px;">
+              <span style="font-size:0.75rem;color:var(--text-muted);">Link portal:</span>
+              <div class="share-link-box">/user/portal-view.html?id=${p.id}</div>
+            </div>
+            <div class="portal-card-footer">
+              <button class="btn btn-secondary btn-sm" onclick="openEditModal('${p.id}')">✏️ Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deletePortal('${p.id}', '${p.name.replace(/'/g, "\\'")}')">🗑️ Hapus</button>
+              <a href="../user/portal-view.html?id=${p.id}" target="_blank" class="btn btn-success btn-sm">👁️ Preview</a>
+            </div>
+          </div>`;
+      }).join('')}</div>`;
+    }
+
+    function openCreateModal() {
+      editingPortalId = null;
+      document.getElementById('modal-title').textContent = 'Buat Portal Baru';
+      document.getElementById('edit-portal-id').value = '';
+      document.getElementById('portal-name').value = '';
+      document.getElementById('portal-desc').value = '';
+      populateModelCheckboxes([]);
+      document.getElementById('portal-modal').style.display = 'flex';
+    }
+
+    function openEditModal(id) {
+      const portal = allPortals.find(p => p.id === id);
+      if (!portal) return;
+      editingPortalId = id;
+      document.getElementById('modal-title').textContent = 'Edit Portal';
+      document.getElementById('edit-portal-id').value = id;
+      document.getElementById('portal-name').value = portal.name;
+      document.getElementById('portal-desc').value = portal.description || '';
+      populateModelCheckboxes(portal.modelIds || []);
+      document.getElementById('portal-modal').style.display = 'flex';
+    }
+
+    function populateModelCheckboxes(selectedIds) {
+      const list = document.getElementById('model-checkbox-list');
+      if (allModels.length === 0) {
+        list.innerHTML = `
+          <div style="color:var(--text-muted);font-size:0.875rem;padding:12px;text-align:center;">
+            Belum ada model. <a href="upload.html" style="color:var(--primary-light);">Upload model →</a>
+          </div>`;
+        return;
+      }
+      list.innerHTML = allModels.map(m => `
+        <label class="model-check-item">
+          <input type="checkbox" class="model-cb" value="${m.id}" ${selectedIds.includes(m.id) ? 'checked' : ''} />
+          <div class="model-check-label">
+            <div class="model-check-name">${m.name}</div>
+            <div class="model-check-meta">${AppUtils.getFormatBadge(m.format)}</div>
+          </div>
+        </label>`).join('');
+    }
+
+    function closeModal() {
+      document.getElementById('portal-modal').style.display = 'none';
+    }
+
+    document.getElementById('create-portal-btn').addEventListener('click', openCreateModal);
+
+    document.getElementById('save-portal-btn').addEventListener('click', async () => {
+      const name = document.getElementById('portal-name').value.trim();
+      const desc = document.getElementById('portal-desc').value.trim();
+      const modelIds = [...document.querySelectorAll('.model-cb:checked')].map(cb => cb.value);
+
+      if (!name) {
+        AppUtils.showToast('Nama portal tidak boleh kosong.', 'error');
+        return;
+      }
+      if (!GitHubStorage.isConfigured()) {
+        AppUtils.showToast('GitHub belum dikonfigurasi.', 'error'); return;
+      }
+
+      const btn = document.getElementById('save-portal-btn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Menyimpan...';
+      AppUtils.showLoading(true, 'Menyimpan portal ke GitHub...');
+
+      try {
+        const portal = {
+          id: editingPortalId || undefined,
+          name, description: desc, modelIds
+        };
+        await GitHubStorage.savePortal(portal);
+        AppUtils.showToast(`Portal "${name}" berhasil disimpan!`, 'success');
+        closeModal();
+        await loadData();
+      } catch (err) {
+        AppUtils.showToast('Gagal menyimpan: ' + err.message, 'error');
+      } finally {
+        AppUtils.showLoading(false);
+        btn.disabled = false;
+        btn.textContent = '💾 Simpan';
+      }
+    });
+
+    async function deletePortal(id, name) {
+      const ok = await AppUtils.confirm(`Hapus portal "${name}"?`);
+      if (!ok) return;
+      if (!GitHubStorage.isConfigured()) {
+        AppUtils.showToast('GitHub belum dikonfigurasi.', 'error'); return;
+      }
+      AppUtils.showLoading(true, 'Menghapus portal...');
+      try {
+        await GitHubStorage.deletePortal(id);
+        AppUtils.showToast('Portal berhasil dihapus.', 'success');
+        await loadData();
+      } catch (err) {
+        AppUtils.showToast('Gagal: ' + err.message, 'error');
+      } finally {
+        AppUtils.showLoading(false);
+      }
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('portal-modal').addEventListener('click', e => {
+      if (e.target === document.getElementById('portal-modal')) closeModal();
+    });
+
+    // Init
+    loadData();
+  </script>
+</body>
+</html>
